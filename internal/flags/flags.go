@@ -11,6 +11,7 @@ type Options struct {
 	ShowAll     bool // -a flag
 	ReverseSort bool // -r flag
 	SortByTime  bool // -t flag
+	ShowHidden  bool
 	TargetPaths []string
 }
 

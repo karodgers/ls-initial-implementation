@@ -10,6 +10,11 @@ import (
 
 // ProcessPath handles the recursive listing of directories
 func ProcessPath(path string, opts flags.Options) error {
+	// Skip if the path itself is a hidden file/directory
+	if !opts.ShowHidden && isHidden(filepath.Base(path)) {
+		return nil
+	}
+
 	// Process the current directory
 	if err := listDirectory(path, opts); err != nil {
 		return err
@@ -27,6 +32,14 @@ func ProcessPath(path string, opts flags.Options) error {
 				return nil
 			}
 
+			// Skip hidden files/directories unless ShowHidden is true
+			if !opts.ShowHidden && isHidden(info.Name()) {
+				if info.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+
 			if info.IsDir() {
 				fmt.Printf("\n%s:\n", p)
 				return listDirectory(p, opts)
@@ -36,4 +49,9 @@ func ProcessPath(path string, opts flags.Options) error {
 	}
 
 	return nil
+}
+
+// isHidden checks if a file or directory is hidden (starts with a dot)
+func isHidden(name string) bool {
+	return len(name) > 0 && name[0] == '.'
 }
