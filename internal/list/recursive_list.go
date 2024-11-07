@@ -2,16 +2,45 @@ package list
 
 import (
 	"fmt"
-	"io/fs"
-	"path/filepath"
-
 	"my-ls-1/internal/flags"
+	"os"
+	"strings"
 )
+
+// getBaseName returns the last element of a path
+func getBaseName(path string) string {
+	// Handle empty path
+	if path == "" {
+		return "."
+	}
+
+	// Remove trailing separators
+	for len(path) > 0 && (path[len(path)-1] == '/' || path[len(path)-1] == '\\') {
+		path = path[:len(path)-1]
+	}
+
+	// Find last separator
+	lastSep := strings.LastIndexAny(path, "/\\")
+	if lastSep == -1 {
+		return path
+	}
+	return path[lastSep+1:]
+}
+
+// joinPath joins path elements with the system separator
+func joinPath(elem ...string) string {
+	result := strings.Join(elem, string(os.PathSeparator))
+	// Clean up any double separators
+	for strings.Contains(result, string(os.PathSeparator)+string(os.PathSeparator)) {
+		result = strings.ReplaceAll(result, string(os.PathSeparator)+string(os.PathSeparator), string(os.PathSeparator))
+	}
+	return result
+}
 
 // ProcessPath handles the recursive listing of directories
 func ProcessPath(path string, opts flags.Options) error {
 	// Skip if the path itself is a hidden file/directory
-	if !opts.ShowHidden && isHidden(filepath.Base(path)) {
+	if !opts.ShowHidden && isHidden(getBaseName(path)) {
 		return nil
 	}
 
@@ -22,32 +51,37 @@ func ProcessPath(path string, opts flags.Options) error {
 
 	// If recursive flag is set, process subdirectories
 	if opts.Recursive {
-		return filepath.Walk(path, func(p string, info fs.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
+		return walkDirectory(path, opts)
+	}
+	return nil
+}
 
-			// Skip the root directory as it's already processed
-			if p == path {
-				return nil
-			}
-
-			// Skip hidden files/directories unless ShowHidden is true
-			if !opts.ShowHidden && isHidden(info.Name()) {
-				if info.IsDir() {
-					return filepath.SkipDir
-				}
-				return nil
-			}
-
-			if info.IsDir() {
-				fmt.Printf("\n%s:\n", p)
-				return listDirectory(p, opts)
-			}
-			return nil
-		})
+// walkDirectory implements directory traversal without filepath.Walk
+func walkDirectory(root string, opts flags.Options) error {
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return err
 	}
 
+	for _, entry := range entries {
+		path := joinPath(root, entry.Name())
+
+		// Skip hidden files/directories unless ShowHidden is true
+		if !opts.ShowHidden && isHidden(entry.Name()) {
+			continue
+		}
+
+		if entry.IsDir() {
+			fmt.Printf("\n%s:\n", path)
+			if err := listDirectory(path, opts); err != nil {
+				return err
+			}
+			// Recursively process subdirectory
+			if err := walkDirectory(path, opts); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
