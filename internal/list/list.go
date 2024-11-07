@@ -3,7 +3,6 @@ package list
 import (
 	"fmt"
 	"my-ls-1/internal/flags"
-	"sort"
 	"strings"
 )
 
@@ -14,10 +13,17 @@ func listDirectory(path string, opts flags.Options) error {
 		return err
 	}
 
-	// Sort files
-	sort.Slice(files, func(i, j int) bool {
-		return strings.ToLower(files[i].Name) < strings.ToLower(files[j].Name)
-	})
+	// Bubble sort implementation for files
+	n := len(files)
+	for i := 0; i < n-1; i++ {
+		for j := 0; j < n-1-i; j++ {
+			// Compare file names case-insensitively
+			if strings.ToLower(files[j].Name) > strings.ToLower(files[j+1].Name) {
+				// Swap files
+				files[j], files[j+1] = files[j+1], files[j]
+			}
+		}
+	}
 
 	// Apply time sort if requested
 	if opts.SortByTime {
@@ -37,6 +43,5 @@ func listDirectory(path string, opts flags.Options) error {
 			fmt.Println(file.Name)
 		}
 	}
-
 	return nil
 }

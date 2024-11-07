@@ -11,15 +11,15 @@ import (
 
 // FileInfo holds the detailed information about a file
 type FileInfo struct {
-	Name    string
-	Mode    string
-	Links   int
-	User    string
-	Group   string
-	Size    int64
-	ModTime time.Time
-	IsDir   bool
-	Path    string
+    Name    string      // File name
+    Mode    string      // Permissions and file type (like "-rw-r--r--")
+    Links   int         // Number of hard links
+    User    string      // Owner's username
+    Group   string      // Group name
+    Size    int64       // File size in bytes
+    ModTime time.Time   // Last modified time
+    IsDir   bool        // Whether it’s a directory
+    Path    string      // Full path to the file
 }
 
 // FormatLongList formats file information in the long listing format (-l flag)
